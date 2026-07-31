@@ -1,7 +1,7 @@
 globalThis.__nitro_main__ = import.meta.url;
-import { _ as FastResponse } from "./_libs/@tanstack/react-start+[...].mjs";
-import { a as toEventHandler, i as defineLazyEventHandler, n as HTTPError, o as toMiddleware, r as callMiddleware, t as H3Core } from "./_libs/h3+rou3+srvx.mjs";
+import { a as toMiddleware, i as toEventHandler, n as callMiddleware, o as HTTPError, r as defineLazyEventHandler, t as H3Core } from "./_libs/h3+rou3+srvx.mjs";
 import { t as HookableCore } from "./_libs/hookable.mjs";
+import { r as FastResponse } from "./_libs/h3-v2+rou3+srvx.mjs";
 //#region #nitro-vite-setup
 function lazyService(loader) {
 	let promise, mod;
@@ -19,51 +19,44 @@ var public_assets_data_default = {
 	"/brixfiling-logo.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"123-4F6i8fNWQURKdW2k1H3w9YcHbiU\"",
-		"mtime": "2026-07-28T11:13:01.761Z",
+		"mtime": "2026-07-30T11:53:37.570Z",
 		"size": 291,
 		"path": "../public/brixfiling-logo.svg"
 	},
 	"/assets/Artboard 10@4x-C81m261w.png": {
 		"type": "image/png",
 		"etag": "\"2b48-fSTPJWWvC9Ws8whLo0JoYRtavX4\"",
-		"mtime": "2026-07-30T09:26:35.149Z",
+		"mtime": "2026-07-31T12:04:54.085Z",
 		"size": 11080,
 		"path": "../public/assets/Artboard 10@4x-C81m261w.png"
 	},
 	"/robots.txt": {
 		"type": "text/plain; charset=utf-8",
 		"etag": "\"a0-CKGXSIe7TSsqDTmGm/nY1t/o5d0\"",
-		"mtime": "2026-07-28T10:43:27.638Z",
+		"mtime": "2026-07-30T11:53:37.671Z",
 		"size": 160,
 		"path": "../public/robots.txt"
 	},
 	"/assets/Artboard 5 copy@4x-DrgG4t-d.png": {
 		"type": "image/png",
 		"etag": "\"91ad-803jGHCoys8uQHbKPZm2GWSelGk\"",
-		"mtime": "2026-07-30T09:26:35.149Z",
+		"mtime": "2026-07-31T12:04:54.088Z",
 		"size": 37293,
 		"path": "../public/assets/Artboard 5 copy@4x-DrgG4t-d.png"
 	},
 	"/assets/styles-Bpyo9kJQ.css": {
 		"type": "text/css; charset=utf-8",
 		"etag": "\"1481c-0AaJ6wtgjmZinu8Z9V+HGaVFExw\"",
-		"mtime": "2026-07-30T09:26:35.151Z",
+		"mtime": "2026-07-31T12:04:54.088Z",
 		"size": 83996,
 		"path": "../public/assets/styles-Bpyo9kJQ.css"
 	},
-	"/assets/routes-6-xif7Lm.js": {
+	"/assets/index-DrgEe9vc.js": {
 		"type": "text/javascript; charset=utf-8",
-		"etag": "\"653a-aGPwl1SCpnQLEy73o0LoVK2zDNE\"",
-		"mtime": "2026-07-30T09:26:35.149Z",
-		"size": 25914,
-		"path": "../public/assets/routes-6-xif7Lm.js"
-	},
-	"/assets/index-Ci9wfJEX.js": {
-		"type": "text/javascript; charset=utf-8",
-		"etag": "\"54445-odmkeZaFf9IbOR9nFgg2NubgxnI\"",
-		"mtime": "2026-07-30T09:26:35.146Z",
-		"size": 345157,
-		"path": "../public/assets/index-Ci9wfJEX.js"
+		"etag": "\"5a1a9-OYPIgJRkaUoQi9V0s3I5R6R8OiQ\"",
+		"mtime": "2026-07-31T12:04:54.085Z",
+		"size": 369065,
+		"path": "../public/assets/index-DrgEe9vc.js"
 	}
 };
 //#endregion
@@ -73,6 +66,134 @@ function isPublicAssetURL(id = "") {
 	if (public_assets_data_default[id]) return true;
 	for (const base in publicAssetBases) if (id.startsWith(base)) return true;
 	return false;
+}
+//#endregion
+//#region node_modules/nitro/dist/runtime/internal/error/prod.mjs
+var errorHandler = (error, event) => {
+	const res = defaultHandler(error, event);
+	return new FastResponse(typeof res.body === "string" ? res.body : JSON.stringify(res.body, null, 2), res);
+};
+function defaultHandler(error, event) {
+	const unhandled = error.unhandled ?? !HTTPError.isError(error);
+	const { status = 500, statusText = "" } = unhandled ? {} : error;
+	if (status === 404) {
+		const url = event.url || new URL(event.req.url);
+		const baseURL = "/";
+		if (/^\/[^/]/.test(baseURL) && !url.pathname.startsWith(baseURL)) return {
+			status: 302,
+			headers: new Headers({ location: `${baseURL}${url.pathname.slice(1)}${url.search}` })
+		};
+	}
+	const headers = new Headers(unhandled ? {} : error.headers);
+	headers.set("content-type", "application/json; charset=utf-8");
+	return {
+		status,
+		statusText,
+		headers,
+		body: {
+			error: true,
+			...unhandled ? {
+				status,
+				unhandled: true
+			} : typeof error.toJSON === "function" ? error.toJSON() : {
+				status,
+				statusText,
+				message: error.message
+			}
+		}
+	};
+}
+//#endregion
+//#region #nitro/virtual/error-handler
+var errorHandlers = [errorHandler];
+async function error_handler_default(error, event) {
+	for (const handler of errorHandlers) try {
+		const response = await handler(error, event, { defaultHandler });
+		if (response) return response;
+	} catch (error) {
+		console.error(error);
+	}
+}
+//#endregion
+//#region #nitro/virtual/app
+function createNitroApp() {
+	const captureError = (error, errorCtx) => {
+		if (errorCtx?.event) {
+			const errors = errorCtx.event.req.context?.nitro?.errors;
+			if (errors) errors.push({
+				error,
+				context: errorCtx
+			});
+		}
+	};
+	const h3App = createH3App({ onError(error, event) {
+		return error_handler_default(error, event);
+	} });
+	let appHandler = (req) => {
+		req.context ||= {};
+		req.context.nitro = req.context.nitro || { errors: [] };
+		return h3App.fetch(req);
+	};
+	return {
+		fetch: appHandler,
+		h3: h3App,
+		hooks: void 0,
+		captureError
+	};
+}
+function createH3App(config) {
+	const h3App = new H3Core(config);
+	h3App["~findRoute"] = (event) => findRoute(event.req.method, event.url.pathname);
+	h3App["~getMiddleware"] = (event, route) => {
+		const pathname = event.url.pathname;
+		const method = event.req.method;
+		const middleware = [];
+		const routeRules = getRouteRules(method, pathname);
+		event.context.routeRules = routeRules?.routeRules;
+		if (routeRules?.routeRuleMiddleware.length) middleware.push(...routeRules.routeRuleMiddleware);
+		if (route?.data?.middleware?.length) middleware.push(...route.data.middleware);
+		return middleware;
+	};
+	return h3App;
+}
+//#endregion
+//#region node_modules/nitro/dist/runtime/internal/app.mjs
+function getRouteRules(method, pathname) {
+	const m = findRouteRules(method, pathname);
+	if (!m?.length) return { routeRuleMiddleware: [] };
+	const routeRules = {};
+	for (const layer of m) for (const rule of layer.data) {
+		const currentRule = routeRules[rule.name];
+		if (currentRule) {
+			if (rule.options === false) {
+				delete routeRules[rule.name];
+				continue;
+			}
+			if (typeof currentRule.options === "object" && typeof rule.options === "object") currentRule.options = {
+				...currentRule.options,
+				...rule.options
+			};
+			else currentRule.options = rule.options;
+			currentRule.route = rule.route;
+			currentRule.params = {
+				...currentRule.params,
+				...layer.params
+			};
+		} else if (rule.options !== false) routeRules[rule.name] = {
+			...rule,
+			params: layer.params
+		};
+	}
+	const middleware = [];
+	const orderedRules = Object.values(routeRules).sort((a, b) => (a.handler?.order || 0) - (b.handler?.order || 0));
+	for (const rule of orderedRules) {
+		if (rule.options === false || !rule.handler) continue;
+		middleware.push(rule.handler(rule));
+	}
+	return {
+		routeRules,
+		routeRuleMiddleware: middleware
+	};
 }
 //#endregion
 //#region node_modules/nitro/dist/runtime/internal/route-rules.mjs
@@ -239,11 +360,11 @@ var multiHandler = (...handlers) => {
 	const middleware = handlers.filter(Boolean).map((h) => toMiddleware(h));
 	return (ev) => callMiddleware(ev, middleware, final);
 };
-var _lazy_5uaH5C = defineLazyEventHandler(() => import("./_chunks/ssr-renderer.mjs"));
+var _lazy_C8ZS8z = defineLazyEventHandler(() => import("./_chunks/ssr-renderer.mjs"));
 var findRoute = /* @__PURE__ */ (() => {
 	const $0 = {
 		route: "/**",
-		handler: multiHandler(toEventHandler(server_default), _lazy_5uaH5C)
+		handler: multiHandler(toEventHandler(server_default), _lazy_C8ZS8z)
 	};
 	return (m, p) => {
 		if (p.charCodeAt(p.length - 1) === 47) p = p.slice(0, -1) || "/";
@@ -256,95 +377,6 @@ var findRoute = /* @__PURE__ */ (() => {
 	};
 })();
 [].filter(Boolean);
-//#endregion
-//#region node_modules/nitro/dist/runtime/internal/error/prod.mjs
-var errorHandler = (error, event) => {
-	const res = defaultHandler(error, event);
-	return new FastResponse(typeof res.body === "string" ? res.body : JSON.stringify(res.body, null, 2), res);
-};
-function defaultHandler(error, event) {
-	const unhandled = error.unhandled ?? !HTTPError.isError(error);
-	const { status = 500, statusText = "" } = unhandled ? {} : error;
-	if (status === 404) {
-		const url = event.url || new URL(event.req.url);
-		const baseURL = "/";
-		if (/^\/[^/]/.test(baseURL) && !url.pathname.startsWith(baseURL)) return {
-			status: 302,
-			headers: new Headers({ location: `${baseURL}${url.pathname.slice(1)}${url.search}` })
-		};
-	}
-	const headers = new Headers(unhandled ? {} : error.headers);
-	headers.set("content-type", "application/json; charset=utf-8");
-	return {
-		status,
-		statusText,
-		headers,
-		body: {
-			error: true,
-			...unhandled ? {
-				status,
-				unhandled: true
-			} : typeof error.toJSON === "function" ? error.toJSON() : {
-				status,
-				statusText,
-				message: error.message
-			}
-		}
-	};
-}
-//#endregion
-//#region #nitro/virtual/error-handler
-var errorHandlers = [errorHandler];
-async function error_handler_default(error, event) {
-	for (const handler of errorHandlers) try {
-		const response = await handler(error, event, { defaultHandler });
-		if (response) return response;
-	} catch (error) {
-		console.error(error);
-	}
-}
-//#endregion
-//#region #nitro/virtual/app
-function createNitroApp() {
-	const captureError = (error, errorCtx) => {
-		if (errorCtx?.event) {
-			const errors = errorCtx.event.req.context?.nitro?.errors;
-			if (errors) errors.push({
-				error,
-				context: errorCtx
-			});
-		}
-	};
-	const h3App = createH3App({ onError(error, event) {
-		return error_handler_default(error, event);
-	} });
-	let appHandler = (req) => {
-		req.context ||= {};
-		req.context.nitro = req.context.nitro || { errors: [] };
-		return h3App.fetch(req);
-	};
-	return {
-		fetch: appHandler,
-		h3: h3App,
-		hooks: void 0,
-		captureError
-	};
-}
-function createH3App(config) {
-	const h3App = new H3Core(config);
-	h3App["~findRoute"] = (event) => findRoute(event.req.method, event.url.pathname);
-	h3App["~getMiddleware"] = (event, route) => {
-		const pathname = event.url.pathname;
-		const method = event.req.method;
-		const middleware = [];
-		const routeRules = getRouteRules(method, pathname);
-		event.context.routeRules = routeRules?.routeRules;
-		if (routeRules?.routeRuleMiddleware.length) middleware.push(...routeRules.routeRuleMiddleware);
-		if (route?.data?.middleware?.length) middleware.push(...route.data.middleware);
-		return middleware;
-	};
-	return h3App;
-}
 //#endregion
 //#region node_modules/nitro/dist/runtime/internal/app.mjs
 var APP_ID = "default";
@@ -361,43 +393,6 @@ function useNitroHooks() {
 	const hooks = nitroApp.hooks;
 	if (hooks) return hooks;
 	return nitroApp.hooks = new HookableCore();
-}
-function getRouteRules(method, pathname) {
-	const m = findRouteRules(method, pathname);
-	if (!m?.length) return { routeRuleMiddleware: [] };
-	const routeRules = {};
-	for (const layer of m) for (const rule of layer.data) {
-		const currentRule = routeRules[rule.name];
-		if (currentRule) {
-			if (rule.options === false) {
-				delete routeRules[rule.name];
-				continue;
-			}
-			if (typeof currentRule.options === "object" && typeof rule.options === "object") currentRule.options = {
-				...currentRule.options,
-				...rule.options
-			};
-			else currentRule.options = rule.options;
-			currentRule.route = rule.route;
-			currentRule.params = {
-				...currentRule.params,
-				...layer.params
-			};
-		} else if (rule.options !== false) routeRules[rule.name] = {
-			...rule,
-			params: layer.params
-		};
-	}
-	const middleware = [];
-	const orderedRules = Object.values(routeRules).sort((a, b) => (a.handler?.order || 0) - (b.handler?.order || 0));
-	for (const rule of orderedRules) {
-		if (rule.options === false || !rule.handler) continue;
-		middleware.push(rule.handler(rule));
-	}
-	return {
-		routeRules,
-		routeRuleMiddleware: middleware
-	};
 }
 //#endregion
 //#region node_modules/nitro/dist/presets/cloudflare/runtime/_module-handler.mjs

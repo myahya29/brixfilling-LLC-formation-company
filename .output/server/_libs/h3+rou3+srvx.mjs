@@ -1,3 +1,97 @@
+//#region node_modules/h3/dist/h3.mjs
+var kEventNS$1 = "h3.internal.event.";
+`${kEventNS$1}`;
+`${kEventNS$1}`;
+`${kEventNS$1}`;
+`${kEventNS$1}`;
+var DISALLOWED_STATUS_CHARS$1 = /[^\u0009\u0020-\u007E]/g;
+function sanitizeStatusMessage$1(statusMessage = "") {
+	return statusMessage.replace(DISALLOWED_STATUS_CHARS$1, "");
+}
+function sanitizeStatusCode$1(statusCode, defaultStatusCode = 200) {
+	if (!statusCode) return defaultStatusCode;
+	if (typeof statusCode === "string") statusCode = +statusCode;
+	if (!Number.isInteger(statusCode) || statusCode < 100 || statusCode > 599) return defaultStatusCode;
+	return statusCode;
+}
+var HTTPError$1 = class HTTPError extends Error {
+	get name() {
+		return "HTTPError";
+	}
+	status;
+	statusText;
+	headers;
+	cause;
+	data;
+	body;
+	unhandled;
+	static isError(input) {
+		return input instanceof Error && input?.name === "HTTPError";
+	}
+	static status(status, statusText, details) {
+		return new HTTPError({
+			...details,
+			statusText,
+			status
+		});
+	}
+	constructor(arg1, arg2) {
+		let messageInput;
+		let details;
+		if (typeof arg1 === "string") {
+			messageInput = arg1;
+			details = arg2;
+		} else details = arg1;
+		const status = sanitizeStatusCode$1(details?.status || details?.statusCode || (details?.cause)?.status || (details?.cause)?.statusCode, 500);
+		const statusText = sanitizeStatusMessage$1(details?.statusText || details?.statusMessage || (details?.cause)?.statusText || (details?.cause)?.statusMessage);
+		const message = messageInput || details?.message || (details?.cause)?.message || details?.statusText || details?.statusMessage || [
+			"HTTPError",
+			status,
+			statusText
+		].filter(Boolean).join(" ");
+		super(message, { cause: details });
+		this.cause = details;
+		this.status = status;
+		this.statusText = statusText || void 0;
+		const rawHeaders = details?.headers || (details?.cause)?.headers;
+		this.headers = rawHeaders ? new Headers(rawHeaders) : void 0;
+		this.unhandled = details?.unhandled ?? (details?.cause)?.unhandled ?? void 0;
+		this.data = details?.data;
+		this.body = details?.body;
+	}
+	get statusCode() {
+		return this.status;
+	}
+	get statusMessage() {
+		return this.statusText;
+	}
+	toJSON() {
+		const unhandled = this.unhandled;
+		return {
+			status: this.status,
+			statusText: this.statusText,
+			unhandled,
+			message: unhandled ? "HTTPError" : this.message,
+			data: unhandled ? void 0 : this.data,
+			...unhandled ? void 0 : this.body
+		};
+	}
+};
+function toRequest(input, options) {
+	if (typeof input === "string") {
+		let url = input;
+		if (url[0] === "/") {
+			const headers = options?.headers ? new Headers(options.headers) : void 0;
+			const host = headers?.get("host") || "localhost";
+			url = `${(headers?.get("x-forwarded-proto") || "").split(",")[0].trim() === "https" ? "https" : "http"}://${host}${url}`;
+		}
+		return new Request(url, options);
+	} else if (options || input instanceof URL) return new Request(input, options);
+	return input;
+}
+String.raw`(?:^|/)(?:\.|%(?:25)*2e){1,2}(?:/|$)`;
+String.raw`%(?:25)*(?:2f|5c)`;
+//#endregion
 //#region node_modules/h3/node_modules/rou3/dist/index.mjs
 var NullProtoObj = /* @__PURE__ */ (() => {
 	const e = function() {};
@@ -375,18 +469,6 @@ function toMiddleware(input) {
 function is404(val) {
 	return isUnhandledResponse(val) || val?.status === 404 && val instanceof Response;
 }
-function toRequest(input, options) {
-	if (typeof input === "string") {
-		let url = input;
-		if (url[0] === "/") {
-			const headers = options?.headers ? new Headers(options.headers) : void 0;
-			const host = headers?.get("host") || "localhost";
-			url = `${(headers?.get("x-forwarded-proto") || "").split(",")[0].trim() === "https" ? "https" : "http"}://${host}${url}`;
-		}
-		return new Request(url, options);
-	} else if (options || input instanceof URL) return new Request(input, options);
-	return input;
-}
 function defineHandler(input) {
 	if (typeof input === "function") return handlerWithFetch(input);
 	const handler = input.handler || (input.fetch ? function _fetchHandler(event) {
@@ -492,4 +574,4 @@ function routeHandler(route) {
 String.raw`(?:^|/)(?:\.|%(?:25)*2e){1,2}(?:/|$)`;
 String.raw`%(?:25)*(?:2f|5c)`;
 //#endregion
-export { toEventHandler as a, defineLazyEventHandler as i, HTTPError as n, toMiddleware as o, callMiddleware as r, toRequest as s, H3Core as t };
+export { toMiddleware as a, toEventHandler as i, callMiddleware as n, HTTPError$1 as o, defineLazyEventHandler as r, toRequest as s, H3Core as t };

@@ -1,7 +1,7 @@
 import { n as __exportAll } from "../../_runtime.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../react+tanstack__react-query.mjs";
-import { A as createLRUCache, C as resolveManifestAssetLink, D as isResolvedRedirect, E as isRedirect, M as decodePath, O as rootRouteId, S as getStylesheetHref, T as executeRewriteInput, _ as GLOBAL_TSR, a as replaceSsrResponse, b as createInlineCssStyleAsset, i as normalizeSsrResponse, j as invariant, k as isNotFound, l as RouterProvider, n as defineHandlerCallback, o as stripSsrResponseBody, r as isSsrResponse, t as renderRouterToStream, v as TSR_SCRIPT_BARRIER_ID, w as resolveManifestCssLink, x as getScriptPreloadAttrs, y as createInlineCssPlaceholderAsset } from "./react-router+[...].mjs";
-import { n as createMemoryHistory } from "../tanstack__history.mjs";
+import { A as invariant, C as resolveManifestCssLink, D as rootRouteId, E as isResolvedRedirect, O as isNotFound, S as resolveManifestAssetLink, T as isRedirect, _ as TSR_SCRIPT_BARRIER_ID, a as replaceSsrResponse, b as getScriptPreloadAttrs, g as GLOBAL_TSR, i as normalizeSsrResponse, j as decodePath, k as createLRUCache, l as RouterProvider, n as defineHandlerCallback, o as stripSsrResponseBody, r as isSsrResponse, t as renderRouterToStream, v as createInlineCssPlaceholderAsset, w as executeRewriteInput, x as getStylesheetHref, y as createInlineCssStyleAsset } from "./react-router+[...].mjs";
+import { r as createMemoryHistory } from "../tanstack__history.mjs";
 import processModule from "node:process";
 import { AsyncLocalStorage } from "node:async_hooks";
 //#region node_modules/unenv/dist/runtime/_internal/utils.mjs
@@ -3215,6 +3215,207 @@ function mergeHeaders(...headers) {
 	}, new Headers());
 }
 //#endregion
+//#region node_modules/@tanstack/start-client-core/dist/esm/constants.js
+var TSS_FORMDATA_CONTEXT = "__TSS_CONTEXT";
+var TSS_SERVER_FUNCTION = Symbol.for("TSS_SERVER_FUNCTION");
+var X_TSS_SERIALIZED = "x-tss-serialized";
+var X_TSS_RAW_RESPONSE = "x-tss-raw";
+/** Content-Type for multiplexed framed responses (RawStream support) */
+var TSS_CONTENT_TYPE_FRAMED = "application/x-tss-framed";
+/**
+* Frame types for binary multiplexing protocol.
+*/
+var FrameType = {
+	/** Seroval JSON chunk (NDJSON line) */
+	JSON: 0,
+	/** Raw stream data chunk */
+	CHUNK: 1,
+	/** Raw stream end (EOF) */
+	END: 2,
+	/** Raw stream error */
+	ERROR: 3
+};
+/** Full Content-Type header value with version parameter */
+var TSS_CONTENT_TYPE_FRAMED_VERSIONED = `${TSS_CONTENT_TYPE_FRAMED}; v=1`;
+//#endregion
+//#region node_modules/@tanstack/start-client-core/dist/esm/safeObjectMerge.js
+function isSafeKey(key) {
+	return key !== "__proto__" && key !== "constructor" && key !== "prototype";
+}
+/**
+* Merge target and source into a new null-proto object, filtering dangerous keys.
+*/
+function safeObjectMerge(target, source) {
+	const result = Object.create(null);
+	if (target) {
+		for (const key of Object.keys(target)) if (isSafeKey(key)) result[key] = target[key];
+	}
+	if (source && typeof source === "object") {
+		for (const key of Object.keys(source)) if (isSafeKey(key)) result[key] = source[key];
+	}
+	return result;
+}
+/**
+* Create a null-prototype object, optionally copying from source.
+*/
+function createNullProtoObject(source) {
+	if (!source) return Object.create(null);
+	const obj = Object.create(null);
+	for (const key of Object.keys(source)) if (isSafeKey(key)) obj[key] = source[key];
+	return obj;
+}
+//#endregion
+//#region node_modules/@tanstack/start-fn-stubs/dist/esm/createIsomorphicFn.js
+function createIsomorphicFn() {
+	return createRuntimeFn(() => void 0);
+}
+function createRuntimeFn(fn, serverImpl) {
+	return Object.assign(fn, {
+		server: (nextServerImpl) => {
+			return createRuntimeFn(nextServerImpl, nextServerImpl);
+		},
+		client: (clientImpl) => {
+			return createRuntimeFn(serverImpl ?? clientImpl, serverImpl);
+		}
+	});
+}
+//#endregion
+//#region node_modules/@tanstack/start-storage-context/dist/esm/async-local-storage.js
+var GLOBAL_STORAGE_KEY = Symbol.for("tanstack-start:start-storage-context");
+var globalObj$1 = globalThis;
+if (!globalObj$1[GLOBAL_STORAGE_KEY]) globalObj$1[GLOBAL_STORAGE_KEY] = new AsyncLocalStorage();
+var startStorage = globalObj$1[GLOBAL_STORAGE_KEY];
+async function runWithStartContext(context, fn) {
+	return startStorage.run(context, fn);
+}
+function getStartContext(opts) {
+	const context = startStorage.getStore();
+	if (!context && opts?.throwIfNotFound !== false) throw new Error(`No Start context found in AsyncLocalStorage. Make sure you are using the function within the server runtime.`);
+	return context;
+}
+//#endregion
+//#region node_modules/@tanstack/start-client-core/dist/esm/getStartOptions.js
+var getStartOptions = createIsomorphicFn().client(() => window.__TSS_START_OPTIONS__).server(() => getStartContext().startOptions);
+//#endregion
+//#region node_modules/@tanstack/start-client-core/dist/esm/createServerFn.js
+function flattenMiddlewares(middlewares, maxDepth = 100) {
+	const seen = /* @__PURE__ */ new Set();
+	const flattened = [];
+	const recurse = (middleware, depth) => {
+		if (depth > maxDepth) throw new Error(`Middleware nesting depth exceeded maximum of ${maxDepth}. Check for circular references.`);
+		middleware.forEach((m) => {
+			if (m.options.middleware) recurse(m.options.middleware, depth + 1);
+			if (!seen.has(m)) {
+				seen.add(m);
+				flattened.push(m);
+			}
+		});
+	};
+	recurse(middlewares, 0);
+	return flattened;
+}
+//#endregion
+//#region node_modules/@tanstack/start-client-core/dist/esm/createMiddleware.js
+var createMiddleware = (options, __opts) => {
+	const resolvedOptions = {
+		type: "request",
+		...__opts || options
+	};
+	const setValidator = (validator) => {
+		return createMiddleware({}, Object.assign(resolvedOptions, {
+			validator,
+			inputValidator: validator
+		}));
+	};
+	return {
+		options: resolvedOptions,
+		middleware: (middleware) => {
+			return createMiddleware({}, Object.assign(resolvedOptions, { middleware }));
+		},
+		validator: setValidator,
+		inputValidator: setValidator,
+		client: (client) => {
+			return createMiddleware({}, Object.assign(resolvedOptions, { client }));
+		},
+		server: (server) => {
+			return createMiddleware({}, Object.assign(resolvedOptions, { server }));
+		}
+	};
+};
+//#endregion
+//#region node_modules/@tanstack/start-client-core/dist/esm/createCsrfMiddleware.js
+var innerCreateCsrfMiddleware = (opts = {}) => {
+	return createMiddleware().server(async (ctx) => {
+		const csrfCtx = ctx;
+		if (opts.filter && !await opts.filter(csrfCtx)) return ctx.next();
+		if (await isCsrfRequestAllowed(opts, csrfCtx)) return ctx.next();
+		return getFailureResponse(opts, csrfCtx);
+	});
+};
+var createCsrfMiddleware = createIsomorphicFn().server(innerCreateCsrfMiddleware);
+async function isCsrfRequestAllowed(opts, ctx) {
+	const result = await getCsrfRequestValidationResult(opts, ctx);
+	return result === true || result === void 0 && opts.allowRequestsWithoutOriginCheck === true;
+}
+async function getCsrfRequestValidationResult(opts, ctx) {
+	const fetchSite = ctx.request.headers.get("Sec-Fetch-Site");
+	if (fetchSite !== null) return matchValue(opts.secFetchSite ?? "same-origin", fetchSite, ctx);
+	const origin = ctx.request.headers.get("Origin");
+	if (origin !== null) {
+		if (opts.origin) return matchValue(opts.origin, origin, ctx);
+		return origin === new URL(ctx.request.url).origin;
+	}
+	const referer = ctx.request.headers.get("Referer");
+	if (referer === null || opts.referer === false) return;
+	if (typeof opts.referer === "function") return opts.referer(referer, ctx);
+	if (opts.origin) {
+		const refererOrigin = getOriginFromUrl(referer);
+		return refererOrigin !== void 0 && matchValue(opts.origin, refererOrigin, ctx);
+	}
+	return isRefererSameOrigin(referer, new URL(ctx.request.url).origin);
+}
+async function matchValue(matcher, value, ctx) {
+	if (typeof matcher === "function") return matcher(value, ctx);
+	if (Array.isArray(matcher)) return matcher.includes(value);
+	return value === matcher;
+}
+function getOriginFromUrl(url) {
+	try {
+		return new URL(url).origin;
+	} catch {
+		return;
+	}
+}
+function isRefererSameOrigin(referer, requestOrigin) {
+	if (referer === requestOrigin) return true;
+	if (!referer.startsWith(requestOrigin)) return false;
+	if (referer.length === requestOrigin.length) return true;
+	const code = referer.charCodeAt(requestOrigin.length);
+	return code === 47 || code === 63 || code === 35;
+}
+async function getFailureResponse(opts, ctx) {
+	if (typeof opts.failureResponse === "function") return opts.failureResponse(ctx);
+	return opts.failureResponse?.clone() ?? new Response("Forbidden", { status: 403 });
+}
+//#endregion
+//#region node_modules/@tanstack/start-client-core/dist/esm/getDefaultSerovalPlugins.js
+function getDefaultSerovalPlugins() {
+	return [...(getStartOptions()?.serializationAdapters)?.map(makeSerovalPlugin) ?? [], ...defaultSerovalPlugins];
+}
+require_react();
+var import_jsx_runtime = require_jsx_runtime();
+function StartServer(props) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RouterProvider, { router: props.router });
+}
+//#endregion
+//#region node_modules/@tanstack/react-start-server/dist/esm/defaultStreamHandler.js
+var defaultStreamHandler = defineHandlerCallback(({ request, router, responseHeaders }) => renderRouterToStream({
+	request,
+	router,
+	responseHeaders,
+	children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StartServer, { router })
+}));
+//#endregion
 //#region node_modules/rou3/dist/index.mjs
 var NullProtoObj = /* @__PURE__ */ (() => {
 	const e = function() {};
@@ -3503,25 +3704,12 @@ function errorResponse(error, debug, errHeaders) {
 		headers
 	});
 }
-require_react();
-var import_jsx_runtime = require_jsx_runtime();
-function StartServer(props) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RouterProvider, { router: props.router });
-}
-//#endregion
-//#region node_modules/@tanstack/react-start-server/dist/esm/defaultStreamHandler.js
-var defaultStreamHandler = defineHandlerCallback(({ request, router, responseHeaders }) => renderRouterToStream({
-	request,
-	router,
-	responseHeaders,
-	children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StartServer, { router })
-}));
 //#endregion
 //#region node_modules/@tanstack/start-server-core/dist/esm/request-response.js
 var GLOBAL_EVENT_STORAGE_KEY = Symbol.for("tanstack-start:event-storage");
-var globalObj$1 = globalThis;
-if (!globalObj$1[GLOBAL_EVENT_STORAGE_KEY]) globalObj$1[GLOBAL_EVENT_STORAGE_KEY] = new AsyncLocalStorage();
-var eventStorage = globalObj$1[GLOBAL_EVENT_STORAGE_KEY];
+var globalObj = globalThis;
+if (!globalObj[GLOBAL_EVENT_STORAGE_KEY]) globalObj[GLOBAL_EVENT_STORAGE_KEY] = new AsyncLocalStorage();
+var eventStorage = globalObj[GLOBAL_EVENT_STORAGE_KEY];
 function isPromiseLike(value) {
 	return typeof value.then === "function";
 }
@@ -3608,194 +3796,6 @@ async function getStartManifest(matchedRoutes) {
 //#endregion
 //#region node_modules/@tanstack/start-server-core/dist/esm/fake-start-server-fn-resolver.js
 async function getServerFnById(_id, _access) {}
-//#endregion
-//#region node_modules/@tanstack/start-client-core/dist/esm/constants.js
-var TSS_FORMDATA_CONTEXT = "__TSS_CONTEXT";
-var TSS_SERVER_FUNCTION = Symbol.for("TSS_SERVER_FUNCTION");
-var X_TSS_SERIALIZED = "x-tss-serialized";
-var X_TSS_RAW_RESPONSE = "x-tss-raw";
-/** Content-Type for multiplexed framed responses (RawStream support) */
-var TSS_CONTENT_TYPE_FRAMED = "application/x-tss-framed";
-/**
-* Frame types for binary multiplexing protocol.
-*/
-var FrameType = {
-	/** Seroval JSON chunk (NDJSON line) */
-	JSON: 0,
-	/** Raw stream data chunk */
-	CHUNK: 1,
-	/** Raw stream end (EOF) */
-	END: 2,
-	/** Raw stream error */
-	ERROR: 3
-};
-/** Full Content-Type header value with version parameter */
-var TSS_CONTENT_TYPE_FRAMED_VERSIONED = `${TSS_CONTENT_TYPE_FRAMED}; v=1`;
-//#endregion
-//#region node_modules/@tanstack/start-client-core/dist/esm/safeObjectMerge.js
-function isSafeKey(key) {
-	return key !== "__proto__" && key !== "constructor" && key !== "prototype";
-}
-/**
-* Merge target and source into a new null-proto object, filtering dangerous keys.
-*/
-function safeObjectMerge(target, source) {
-	const result = Object.create(null);
-	if (target) {
-		for (const key of Object.keys(target)) if (isSafeKey(key)) result[key] = target[key];
-	}
-	if (source && typeof source === "object") {
-		for (const key of Object.keys(source)) if (isSafeKey(key)) result[key] = source[key];
-	}
-	return result;
-}
-/**
-* Create a null-prototype object, optionally copying from source.
-*/
-function createNullProtoObject(source) {
-	if (!source) return Object.create(null);
-	const obj = Object.create(null);
-	for (const key of Object.keys(source)) if (isSafeKey(key)) obj[key] = source[key];
-	return obj;
-}
-//#endregion
-//#region node_modules/@tanstack/start-fn-stubs/dist/esm/createIsomorphicFn.js
-function createIsomorphicFn() {
-	return createRuntimeFn(() => void 0);
-}
-function createRuntimeFn(fn, serverImpl) {
-	return Object.assign(fn, {
-		server: (nextServerImpl) => {
-			return createRuntimeFn(nextServerImpl, nextServerImpl);
-		},
-		client: (clientImpl) => {
-			return createRuntimeFn(serverImpl ?? clientImpl, serverImpl);
-		}
-	});
-}
-//#endregion
-//#region node_modules/@tanstack/start-storage-context/dist/esm/async-local-storage.js
-var GLOBAL_STORAGE_KEY = Symbol.for("tanstack-start:start-storage-context");
-var globalObj = globalThis;
-if (!globalObj[GLOBAL_STORAGE_KEY]) globalObj[GLOBAL_STORAGE_KEY] = new AsyncLocalStorage();
-var startStorage = globalObj[GLOBAL_STORAGE_KEY];
-async function runWithStartContext(context, fn) {
-	return startStorage.run(context, fn);
-}
-function getStartContext(opts) {
-	const context = startStorage.getStore();
-	if (!context && opts?.throwIfNotFound !== false) throw new Error(`No Start context found in AsyncLocalStorage. Make sure you are using the function within the server runtime.`);
-	return context;
-}
-//#endregion
-//#region node_modules/@tanstack/start-client-core/dist/esm/getStartOptions.js
-var getStartOptions = createIsomorphicFn().client(() => window.__TSS_START_OPTIONS__).server(() => getStartContext().startOptions);
-//#endregion
-//#region node_modules/@tanstack/start-client-core/dist/esm/createServerFn.js
-function flattenMiddlewares(middlewares, maxDepth = 100) {
-	const seen = /* @__PURE__ */ new Set();
-	const flattened = [];
-	const recurse = (middleware, depth) => {
-		if (depth > maxDepth) throw new Error(`Middleware nesting depth exceeded maximum of ${maxDepth}. Check for circular references.`);
-		middleware.forEach((m) => {
-			if (m.options.middleware) recurse(m.options.middleware, depth + 1);
-			if (!seen.has(m)) {
-				seen.add(m);
-				flattened.push(m);
-			}
-		});
-	};
-	recurse(middlewares, 0);
-	return flattened;
-}
-//#endregion
-//#region node_modules/@tanstack/start-client-core/dist/esm/createMiddleware.js
-var createMiddleware = (options, __opts) => {
-	const resolvedOptions = {
-		type: "request",
-		...__opts || options
-	};
-	const setValidator = (validator) => {
-		return createMiddleware({}, Object.assign(resolvedOptions, {
-			validator,
-			inputValidator: validator
-		}));
-	};
-	return {
-		options: resolvedOptions,
-		middleware: (middleware) => {
-			return createMiddleware({}, Object.assign(resolvedOptions, { middleware }));
-		},
-		validator: setValidator,
-		inputValidator: setValidator,
-		client: (client) => {
-			return createMiddleware({}, Object.assign(resolvedOptions, { client }));
-		},
-		server: (server) => {
-			return createMiddleware({}, Object.assign(resolvedOptions, { server }));
-		}
-	};
-};
-//#endregion
-//#region node_modules/@tanstack/start-client-core/dist/esm/createCsrfMiddleware.js
-var innerCreateCsrfMiddleware = (opts = {}) => {
-	return createMiddleware().server(async (ctx) => {
-		const csrfCtx = ctx;
-		if (opts.filter && !await opts.filter(csrfCtx)) return ctx.next();
-		if (await isCsrfRequestAllowed(opts, csrfCtx)) return ctx.next();
-		return getFailureResponse(opts, csrfCtx);
-	});
-};
-var createCsrfMiddleware = createIsomorphicFn().server(innerCreateCsrfMiddleware);
-async function isCsrfRequestAllowed(opts, ctx) {
-	const result = await getCsrfRequestValidationResult(opts, ctx);
-	return result === true || result === void 0 && opts.allowRequestsWithoutOriginCheck === true;
-}
-async function getCsrfRequestValidationResult(opts, ctx) {
-	const fetchSite = ctx.request.headers.get("Sec-Fetch-Site");
-	if (fetchSite !== null) return matchValue(opts.secFetchSite ?? "same-origin", fetchSite, ctx);
-	const origin = ctx.request.headers.get("Origin");
-	if (origin !== null) {
-		if (opts.origin) return matchValue(opts.origin, origin, ctx);
-		return origin === new URL(ctx.request.url).origin;
-	}
-	const referer = ctx.request.headers.get("Referer");
-	if (referer === null || opts.referer === false) return;
-	if (typeof opts.referer === "function") return opts.referer(referer, ctx);
-	if (opts.origin) {
-		const refererOrigin = getOriginFromUrl(referer);
-		return refererOrigin !== void 0 && matchValue(opts.origin, refererOrigin, ctx);
-	}
-	return isRefererSameOrigin(referer, new URL(ctx.request.url).origin);
-}
-async function matchValue(matcher, value, ctx) {
-	if (typeof matcher === "function") return matcher(value, ctx);
-	if (Array.isArray(matcher)) return matcher.includes(value);
-	return value === matcher;
-}
-function getOriginFromUrl(url) {
-	try {
-		return new URL(url).origin;
-	} catch {
-		return;
-	}
-}
-function isRefererSameOrigin(referer, requestOrigin) {
-	if (referer === requestOrigin) return true;
-	if (!referer.startsWith(requestOrigin)) return false;
-	if (referer.length === requestOrigin.length) return true;
-	const code = referer.charCodeAt(requestOrigin.length);
-	return code === 47 || code === 63 || code === 35;
-}
-async function getFailureResponse(opts, ctx) {
-	if (typeof opts.failureResponse === "function") return opts.failureResponse(ctx);
-	return opts.failureResponse?.clone() ?? new Response("Forbidden", { status: 403 });
-}
-//#endregion
-//#region node_modules/@tanstack/start-client-core/dist/esm/getDefaultSerovalPlugins.js
-function getDefaultSerovalPlugins() {
-	return [...(getStartOptions()?.serializationAdapters)?.map(makeSerovalPlugin) ?? [], ...defaultSerovalPlugins];
-}
 //#endregion
 //#region node_modules/@tanstack/start-server-core/dist/esm/frame-protocol.js
 /**
@@ -5124,4 +5124,4 @@ function createServerEntry(entry) {
 }
 var server_default = createServerEntry({ fetch: fetch$1 });
 //#endregion
-export { FastResponse as _, toResponse as a, getNormalizedURL as c, createRawStreamRPCPlugin as d, createSerializationAdapter as f, lu as g, cu as h, H3Event as i, getOrigin as l, Ou as m, createCsrfMiddleware as n, mergeHeaders as o, makeSerovalPlugin as p, createMiddleware as r, attachRouterServerSsrUtils as s, server_exports as t, defaultSerovalPlugins as u, performance_default as v };
+export { performance_default as a, globalthis_default as i, createCsrfMiddleware as n, createMiddleware as r, server_exports as t };

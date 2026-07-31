@@ -1,11 +1,11 @@
 {
-  "compatibility_date": "2026-07-30",
+  "compatibility_date": "2026-07-31",
   "main": "index.mjs",
   "assets": {
     "binding": "ASSETS",
     "directory": "..\\public"
   },
-  "name": "myahya29-brixfilling-us-llc-corporation",
+  "name": "myahya29-brixfilling-llc-formation-company",
   "compatibility_flags": [
     "nodejs_compat"
   ],
