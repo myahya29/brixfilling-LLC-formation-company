@@ -159,8 +159,14 @@ function StatCounter({ value, suffix, label }: { value: number; suffix: string; 
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     if (!ref.current) return;
+
+    if (typeof window === "undefined" || typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
+
     const io = new IntersectionObserver(
-      ([e]) => e.isIntersecting && setVisible(true),
+      ([entry]) => entry.isIntersecting && setVisible(true),
       { threshold: 0.3 },
     );
     io.observe(ref.current);
@@ -214,6 +220,7 @@ function Navbar() {
           <a href="#pricing" className="btn-brand btn-brand-hover text-sm px-4 py-2 rounded-lg font-semibold">Start Your Business</a>
         </div>
         <button
+          type="button"
           className="md:hidden text-white p-2"
           onClick={() => setOpen((v) => !v)}
           aria-label="Toggle menu"
@@ -584,7 +591,15 @@ function FAQ() {
         </div>
         <div className="flex flex-wrap justify-center gap-2 mb-8">
           {cats.map((c) => (
-            <button key={c} onClick={() => { setCat(c); setOpen(null); }} className={`px-4 py-2 rounded-full text-sm font-medium transition ${cat === c ? "bg-[#7E00FC] text-white" : "bg-white text-black/70 border border-black/10 hover:border-[#7E00FC]"}`}>
+            <button
+              key={c}
+              type="button"
+              onClick={() => {
+                setCat(c);
+                setOpen(null);
+              }}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition ${cat === c ? "bg-[#7E00FC] text-white" : "bg-white text-black/70 border border-black/10 hover:border-[#7E00FC]"}`}
+            >
               {c}
             </button>
           ))}
@@ -592,7 +607,11 @@ function FAQ() {
         <div className="space-y-3">
           {filtered.map(([category, q, a], i) => (
             <div key={q} className="bg-white rounded-xl border border-black/10 overflow-hidden">
-              <button onClick={() => setOpen(open === i ? null : i)} className="w-full flex items-center justify-between gap-4 p-5 text-left">
+              <button
+                type="button"
+                onClick={() => setOpen(open === i ? null : i)}
+                className="w-full flex items-center justify-between gap-4 p-5 text-left"
+              >
                 <span className="font-semibold text-black">{q}</span>
                 <span className={`text-[#7E00FC] text-2xl transition-transform ${open === i ? "rotate-45" : ""}`}>+</span>
               </button>
